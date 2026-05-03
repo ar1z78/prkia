@@ -9,31 +9,40 @@
 #include "IdentifyView.h"
 //#include "RecipesView.h"
 #include "SummaryView.h"
-#include "TabbingFramework/atlgdix.h"
-#include "TabbingFramework/CustomTabCtrl.h"
-#include "TabbingFramework/DotNetTabCtrl.h"
-#include "TabbingFramework/TabbedMDI.h"
+#include <vector>
+#include <memory>
+
 #ifdef _DEBUG
 #include "AoMsgView.h"
 #endif
 
-class TabFrame
-    : public CTabbedChildWindow< CDotNetTabCtrl<CTabViewTabItem> >
+// Structure to hold tab information
+struct TabItem
 {
-    typedef CTabbedChildWindow< CDotNetTabCtrl<CTabViewTabItem> > baseClass;
+    HWND hWnd;
+    std::tstring title;
+    aoia::IPluginView* pView;
+};
 
+class TabFrame
+    : public CWindowImpl<TabFrame>
+{
 public:
+    DECLARE_WND_CLASS(_T("TabFrame"))
+
     TabFrame(sqlite::IDBPtr db, aoia::IContainerManagerPtr containerManager, aoia::IGuiServicesPtr gui, aoia::ISettingsPtr settings);
     virtual ~TabFrame();
 
     BEGIN_MSG_MAP(TabFrame)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
-        NOTIFY_CODE_HANDLER(CTCN_SELCHANGE, OnSelChange)
-        CHAIN_MSG_MAP(baseClass)
+        MESSAGE_HANDLER(WM_SIZE, OnSize)
+        NOTIFY_CODE_HANDLER(TCN_SELCHANGE, OnSelChange)
+        CHAIN_MSG_MAP(CWindowImpl<TabFrame>)
     END_MSG_MAP()
 
-    LRESULT OnSelChange(int /*idCtrl*/, LPNMHDR pnmh, BOOL& bHandled);
     LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+    LRESULT OnSize(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+    LRESULT OnSelChange(int idCtrl, LPNMHDR pnmh, BOOL& bHandled);
 
     aoia::IPluginView* GetActivePluginView();
     void OnAOServerMessage(Parsers::AOMessageBase &msg);
@@ -44,10 +53,20 @@ public:
     /// Sets the state of the toolbar for the active view.
     void SetToolbarVisibility(bool visible);
 
+    // Tab management methods
+    void AddTab(HWND hWnd, const std::tstring& title, aoia::IPluginView* pView);
+    void DisplayTab(HWND hWnd);
+    HWND GetActiveView() const;
+    WTL::CTabCtrl& GetTabCtrl() { return m_tabCtrl; }
+
 protected:
     void onStatusChanged();
+    void ResizeTabContent();
 
 private:
+    std::vector<TabItem> m_tabs;
+    int m_activeTabIndex;
+
     std::vector<aoia::IPluginView*> m_viewPlugins;
 
     InventoryView       m_inventoryView;
@@ -60,6 +79,7 @@ private:
     IdentifyView        m_identifyView;
     aoia::sv::SummaryView m_summaryView;
 
+    WTL::CTabCtrl       m_tabCtrl;
     WTL::CReBarCtrl     m_rebarControl;
     WTL::CToolBarCtrl   m_activeViewToolbar;
     WTL::CStatusBarCtrl m_statusBar;
