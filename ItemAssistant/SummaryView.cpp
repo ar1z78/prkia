@@ -27,6 +27,38 @@ namespace aoia { namespace sv {
     {
         m_webview.Create(m_hWnd);
 
+        // Build the toolbar
+        TBBUTTON buttons[3];
+        buttons[0].iBitmap = 0;
+        buttons[0].idCommand = ID_REFRESH;
+        buttons[0].fsState = TBSTATE_ENABLED;
+        buttons[0].fsStyle = TBSTYLE_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE;
+        buttons[0].dwData = NULL;
+        buttons[0].iString = (INT_PTR)_T("Refresh");
+        buttons[1].iBitmap = 3;
+        buttons[1].idCommand = 0;
+        buttons[1].fsState = 0;
+        buttons[1].fsStyle = BTNS_SEP;
+        buttons[1].dwData = NULL;
+        buttons[1].iString = NULL;
+        buttons[2].iBitmap = 1;
+        buttons[2].idCommand = ID_HELP;
+        buttons[2].fsState = TBSTATE_ENABLED;
+        buttons[2].fsStyle = TBSTYLE_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE;
+        buttons[2].dwData = NULL;
+        buttons[2].iString = (INT_PTR)_T("Help");
+
+        CImageList imageList;
+        imageList.CreateFromImage(IDB_SUMMARY_VIEW, 16, 1, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_DEFAULTSIZE);
+
+        m_toolbar.Create(GetTopLevelWindow(), NULL, _T("SummaryViewToolBar"), 
+            ATL_SIMPLE_TOOLBAR_PANE_STYLE | TBSTYLE_LIST, 
+            TBSTYLE_EX_MIXEDBUTTONS);
+        m_toolbar.SetButtonStructSize();
+        m_toolbar.SetImageList(imageList);
+        m_toolbar.AddButtons(ARRAYSIZE(buttons), buttons);
+        m_toolbar.AutoSize();
+
         return 0;
     }
 
