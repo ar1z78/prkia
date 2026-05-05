@@ -238,6 +238,7 @@
 #define ID_OLE_EDIT_CHANGE_ICON         0xE203
 #define ID_OLE_EDIT_PROPERTIES          0xE204
 #define ID_OLE_VERB_FIRST               0xE210
+#define ID_VIEW_TOOLBAR                 0xE800
 #define ID_VIEW_STATUS_BAR              0xE801
 #define ID_TRAY_SHOW                    0xE802
 #define ID_VIEW_REFRESH                 0xE803

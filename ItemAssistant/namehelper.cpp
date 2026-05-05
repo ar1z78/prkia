@@ -8,11 +8,6 @@ namespace aoia {
 
     std::tstring GetServerName(int serverIndex)
     {
-
-
-
-
-
         // Construct keys like itemurlname1, itemurlname2...
         std::tstringstream ss;
         ss << _T("itemurlname") << serverIndex;
