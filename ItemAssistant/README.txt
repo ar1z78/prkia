@@ -8,7 +8,7 @@
 Installation:
 =============
 Unzip and run from your location of choice. To avoid possible issues, extract 
-to C:\prkia or similar. Running from the Desktop or from inside Program Files, 
+to C:\aoia or similar. Running from the Desktop or from inside Program Files, 
 may cause problems (in the sense that AOIA wont work) on some systems.
 
 Upgrading:
@@ -42,12 +42,12 @@ Known Issues:
         or,
       - Delete the AOPath setting. Item Assistant will then ask you to specify
         the location on the next startup.
-    * PRKIA needs to run with the same, or higher, level of privileges on your 
+    * AOIA needs to run with the same, or higher, level of privileges on your 
       computer as the AO client itself is running with. If you run the AO client
-      as administrator, you have to do the same with PRKIA.
+      as administrator, you have to do the same with AOIA.
     * Sorting items on the "Backpack" column generates weird results.
-    * Moving a backpack or item while PRKIA is _not_ running, can result in 
-      duplicate items in the PRKIA database. Re-open all affected backpacks to 
+    * Moving a backpack or item while AOIA is _not_ running, can result in 
+      duplicate items in the AOIA database. Re-open all affected backpacks to 
       rescan the content and fix the sync issue.
 
 Aknowledgements:
@@ -78,11 +78,9 @@ Version 2.0.0.0                                      Release Date: 24/04/2026
 	* Updated SQLite library to latest version.
 	* Updated to Detours 4.0.1
 	* Removed boost libraries.
-	* Added autorefresh the inventory (2 seconds), it can be edited in the conf.
+	* Added autorefresh the inventory (1-10 seconds).
 	* Externalized to conf the urls for item searching.
 	* Externilized to conf selling prices colors.
-	* Removed Tabbed Framework library.
-	* Removed the toolbar, moved the functionality to menus.
 	* Various bug fixes.
 
 Version 1.5.6.1                                      Release Date: 3/04/2026

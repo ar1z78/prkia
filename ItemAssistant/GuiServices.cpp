@@ -30,7 +30,7 @@ namespace aoia
 		TCHAR szPath[MAX_PATH];
 		GetModuleFileName(NULL, szPath, MAX_PATH);
 		PathRemoveFileSpec(szPath);
-		PathAppend(szPath, _T("help\\quickstart.html"));
+		PathAppend(szPath, _T("help\\help.html"));
 
 		// 3. Build the parameters
 		std::tstringstream params;
@@ -40,7 +40,7 @@ namespace aoia
 		}
 
 		// 4. Open fresh instance
-		ShellExecute(NULL, _T("open"), _T("help\\Help.exe"), params.str().c_str(), NULL, SW_NORMAL);
+		ShellExecute(NULL, _T("open"), _T("hh.exe"), params.str().c_str(), NULL, SW_NORMAL);
 	}
 
 
