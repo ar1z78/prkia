@@ -123,28 +123,6 @@ struct SMSG_MOVED_DATA {
 	
 };
 
-LRESULT InventoryView::OnSetRefreshTime(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
-{
-	int seconds = (wID - ID_REFRESH_1S) + 1;
-	int newMs = seconds * 1000;
-
-	// Save as string
-	m_settings->setValue(_T("Inventory.RefreshTime"), STREAM2STR(newMs));
-
-	// Restart timer with new value
-	::KillTimer(this->m_hWnd, ID_REFRESH_TIMER);
-	::SetTimer(this->m_hWnd, ID_REFRESH_TIMER, newMs, NULL);
-
-	// Update the checkmarks visually
-	for (int i = 0; i < 10; ++i) {
-		UISetCheck(ID_REFRESH_1S + i, FALSE);
-	}
-	UISetCheck(wID, TRUE);
-
-	bHandled = TRUE;
-	return 0;
-}
-
 
 LRESULT InventoryView::OnTimer(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
@@ -152,8 +130,9 @@ LRESULT InventoryView::OnTimer(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bH
 	{
 		if (m_datagridmodel && m_datagrid)
 		{
-			// 1. Quick check: Did the number of items in the DB change?
-			std::tstring countSql = _T("SELECT COUNT(*) FROM tItems");
+			// FIX: Added "I" alias so that "I.owner" and "I.ql" filters work!
+			std::tstring countSql = _T("SELECT COUNT(*) FROM tItems I");
+
 			if (!m_lastPredicate.empty()) {
 				countSql += _T(" WHERE ") + m_lastPredicate;
 			}
@@ -162,20 +141,23 @@ LRESULT InventoryView::OnTimer(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bH
 			sqlite::ITablePtr pT = m_db->ExecTable(countSql);
 			g_DBManager.UnLock();
 
+			// FIX: Added NULL check for pT to prevent the 0x0 crash
 			unsigned int dbCount = 0;
 			if (pT && pT->Rows() > 0) {
 				dbCount = (unsigned int)atoi(pT->Data(0, 0).c_str());
 			}
+			else if (!pT) {
+				// If SQL failed (syntax error), don't crash, just stop.
+				bHandled = TRUE;
+				return 0;
+			}
 
-			// 2. Only perform the heavy, flickering update if loot was added or removed
 			if (dbCount != m_datagridmodel->getItemCount())
 			{
 				UpdateListView(m_lastPredicate);
 			}
 			else
 			{
-				// No new items? Just update the prices on the existing rows.
-				// RedrawWindow is smooth and does NOT flicker.
 				m_datagridmodel->RefreshCachedSettings();
 				m_datagrid->RedrawWindow();
 			}
@@ -183,10 +165,10 @@ LRESULT InventoryView::OnTimer(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bH
 		bHandled = TRUE;
 		return 0;
 	}
-
 	bHandled = FALSE;
 	return 0;
 }
+
 
 
 
@@ -240,7 +222,6 @@ LRESULT InventoryView::OnFind(WORD/*wNotifyCode*/, WORD/*wID*/, HWND/*hWndCtl*/,
     CSize newsize(rect.right, rect.bottom);
     UpdateLayout(newsize);
 
-    m_toolbar.CheckButton(ID_INV_FIND_TOGGLE, TRUE);
 
     return 0;
 }
@@ -248,22 +229,18 @@ LRESULT InventoryView::OnFind(WORD/*wNotifyCode*/, WORD/*wID*/, HWND/*hWndCtl*/,
 
 LRESULT InventoryView::OnFindToggle(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	// 1. Toggle visibility of your search bar/find window
-	// Assuming m_findView is your search bar window:
 	bool bNewState = !m_findview.IsWindowVisible();
 	m_findview.ShowWindow(bNewState ? SW_SHOW : SW_HIDE);
 
-	m_toolbar.CheckButton(ID_INV_FIND_TOGGLE, bNewState ? TRUE : FALSE);
 
 	// 2. Save state
 	//AOManager::instance().setFindToggle(bNewState);
 
 	// 3. SAFELY update the Main Frame Menu Checkmark
-	// We reuse the WM_UPDATE_MENU_CHECK message we created earlier
 	::PostMessage(GetTopLevelWindow(), WM_UPDATE_MENU_CHECK, (WPARAM)ID_INV_FIND_TOGGLE, (LPARAM)bNewState);
 
 	// 4. Update Layout
-	RECT rect;
+	CRect rect;
 	GetClientRect(&rect);
 	UpdateLayout(CSize(rect.right, rect.bottom));
 
@@ -290,14 +267,10 @@ LRESULT InventoryView::OnInfo(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl
 	// No CMainFrame* cast = No Crash!
 	::PostMessage(GetTopLevelWindow(), WM_UPDATE_MENU_CHECK, (WPARAM)ID_INFO, (LPARAM)bNewState);
 
-	// 3. Sync local toolbar
-	m_toolbar.CheckButton(ID_INFO, bNewState);
-
 	// 4. Update Layout
 	RECT rect;
 	GetClientRect(&rect);
 	UpdateLayout(CSize(rect.right, rect.bottom));
-
 	return 0;
 }
 
@@ -717,14 +690,10 @@ LRESULT InventoryView::OnRecordStatsToggle(WORD /*wNotifyCode*/, WORD /*wID*/, H
 	// 1. Toggle the local boolean
 	m_enableCharacterParserDumper = !m_enableCharacterParserDumper;
 
-	// 2. Update the local toolbar button
-	m_toolbar.CheckButton(ID_RECORD_STATS_TOGGLE, m_enableCharacterParserDumper ? TRUE : FALSE);
-
 	// 3. Save to settings
 	m_settings->setValue(_T("RecordStats"), m_enableCharacterParserDumper ? _T("yes") : _T("no"));
 
 	// 4. SAFELY update the Main Frame Menu Checkmark
-	// This uses the WM_UPDATE_MENU_CHECK handler we already built
 	::PostMessage(GetTopLevelWindow(), WM_UPDATE_MENU_CHECK, (WPARAM)ID_RECORD_STATS_TOGGLE, (LPARAM)m_enableCharacterParserDumper);
 
 	return 0;
@@ -745,7 +714,6 @@ void InventoryView::HideFindWindow()
     CSize newsize(rect.right, rect.bottom);
     UpdateLayout(newsize);
 
-    m_toolbar.CheckButton(ID_INV_FIND_TOGGLE, FALSE);
 }
 
 
@@ -783,61 +751,29 @@ LRESULT InventoryView::OnCreate(LPCREATESTRUCT createStruct)
 
     m_accelerators.LoadAccelerators(IDR_INV_ACCEL);
 
-    TBBUTTON buttons[5];
-    buttons[0].iBitmap = 0;
-    buttons[0].idCommand = ID_INV_FIND_TOGGLE;
-    buttons[0].fsState = TBSTATE_ENABLED;
-    buttons[0].fsStyle = TBSTYLE_BUTTON | BTNS_SHOWTEXT | BTNS_CHECK | BTNS_AUTOSIZE;
-    buttons[0].dwData = NULL;
-    buttons[0].iString = (INT_PTR)_T("Find Item");
-
-    buttons[1].iBitmap = 1;
-    buttons[1].idCommand = ID_INFO;
-    buttons[1].fsState = TBSTATE_ENABLED;
-    buttons[1].fsStyle = TBSTYLE_BUTTON | BTNS_SHOWTEXT | BTNS_CHECK | BTNS_AUTOSIZE;
-    buttons[1].dwData = NULL;
-    buttons[1].iString = (INT_PTR)_T("Item Info");
-
-    buttons[2].iBitmap = 0;
-    buttons[2].idCommand = 0;
-    buttons[2].fsState = 0;
-    buttons[2].fsStyle = BTNS_SEP;
-    buttons[2].dwData = NULL;
-    buttons[2].iString = NULL;
-
-    buttons[3].iBitmap = 3;
-    buttons[3].idCommand = ID_RECORD_STATS_TOGGLE;
-    buttons[3].fsState = TBSTATE_ENABLED;
-    buttons[3].fsStyle = TBSTYLE_BUTTON | BTNS_SHOWTEXT | BTNS_CHECK | BTNS_AUTOSIZE;
-    buttons[3].dwData = NULL;
-    buttons[3].iString = (INT_PTR)_T("Record Stats");
-
-    buttons[4].iBitmap = 2;
-    buttons[4].idCommand = ID_HELP;
-    buttons[4].fsState = TBSTATE_ENABLED;
-    buttons[4].fsStyle = TBSTYLE_BUTTON | BTNS_SHOWTEXT | BTNS_AUTOSIZE;
-    buttons[4].dwData = NULL;
-    buttons[4].iString = (INT_PTR)_T("Help");
-
-    CImageList imageList;
-    imageList.CreateFromImage(IDB_INVENTORY_VIEW, 16, 2, CLR_DEFAULT, IMAGE_BITMAP,
-                              LR_CREATEDIBSECTION | LR_DEFAULTSIZE);
-
-    m_toolbar.Create(GetTopLevelWindow(), NULL, _T("InventoryViewToolBar"),
-                     ATL_SIMPLE_TOOLBAR_PANE_STYLE | TBSTYLE_LIST,
-                     TBSTYLE_EX_MIXEDBUTTONS);
-    m_toolbar.SetButtonStructSize();
-    //m_toolbar.AddBitmap(2, IDB_INVENTORY_VIEW);
-    m_toolbar.SetImageList(imageList);
-    m_toolbar.AddButtons(ARRAYSIZE(buttons), buttons);
-    m_toolbar.AutoSize();
-
-    m_toolbar.CheckButton(ID_RECORD_STATS_TOGGLE, m_enableCharacterParserDumper ? TRUE : FALSE);
-
     PostMessage(WM_POSTCREATE);
-	int refreshMs = _ttoi(m_settings->getValue(_T("Inventory.RefreshTime")).c_str());
-	if (refreshMs < 1000) { refreshMs = 2000; } // Default to 2s if empty
+
+	std::tstring key = _T("Inventory.RefreshTime");
+
+	// Fix: .c_str() is a method, not a property
+	int refreshMs = _ttoi(m_settings->getValue(key).c_str());
+
+	if (refreshMs < 1000) {
+		refreshMs = 2000;
+
+		// Fix: Convert the int to a string/wstring before passing it
+		std::tstringstream ssValue;
+		ssValue << refreshMs;
+		m_settings->setValue(key, ssValue.str());
+	} // Default to 2s if empty
 	SetTimer(ID_REFRESH_TIMER, refreshMs);
+
+	// Call the function for each external server to ensure 
+	// they are loaded from resources and saved to settings.
+	GetServerItemURLTemplate(SERVER_AUNO);
+	GetServerItemURLTemplate(SERVER_JAYDEE);
+	GetServerItemURLTemplate(SERVER_XYPHOS);
+
 
     return 0;
 }
@@ -904,11 +840,10 @@ LRESULT InventoryView::OnPostCreate(UINT/*uMsg*/, WPARAM/*wParam*/, LPARAM/*lPar
 
 	BOOL b = 1;
 	OnFindToggle(0, 0, 0, b);
-	m_toolbar.CheckButton(ID_INV_FIND_TOGGLE, TRUE);
 
 	// Set initial checkmark for refresh
 	int currentMs = _ttoi(m_settings->getValue(_T("Inventory.RefreshTime")).c_str());
-	UISetCheck(ID_REFRESH_1S + (currentMs / 1000) - 1, TRUE);
+//	UISetCheck(ID_REFRESH_1S + (currentMs / 1000) - 1, TRUE);
 
 	
 
@@ -2942,6 +2877,17 @@ void InventoryView::OnAOServerMessage(AOMessageBase& msg)
     default:
         break;
     }
+}
+
+void InventoryView::OnActive(bool doActivation)
+{
+	if (doActivation)
+	{
+		// If you have a splitter, the splitter's pane needs focus
+		if (m_datagrid && m_datagrid->IsWindow()) {
+			m_datagrid->SetFocus();
+		}
+	}
 }
 
 

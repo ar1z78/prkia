@@ -35,8 +35,7 @@ public:
     virtual BOOL OnIdle();
 
     BEGIN_UPDATE_UI_MAP(CMainFrame)
-        UPDATE_ELEMENT(ID_VIEW_TOOLBAR, UPDUI_MENUPOPUP)
-        UPDATE_ELEMENT(ID_VIEW_STATUS_BAR, UPDUI_MENUPOPUP)
+         UPDATE_ELEMENT(ID_VIEW_STATUS_BAR, UPDUI_MENUPOPUP)
         UPDATE_ELEMENT(ID_OPTIONS_AUTOMATICPREFS, UPDUI_MENUPOPUP)
         UPDATE_ELEMENT(ID_OPTIONS_MANUALPREFS, UPDUI_MENUPOPUP)
 		UPDATE_ELEMENT(ID_OPTIONS_SHOWCREDS, UPDUI_MENUPOPUP)
@@ -61,7 +60,6 @@ public:
     BEGIN_MSG_MAP_EX(CMainFrame)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
         COMMAND_ID_HANDLER(ID_APP_EXIT, OnFileExit)
-        COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
         COMMAND_ID_HANDLER(ID_VIEW_STATUS_BAR, OnViewStatusBar)
 		COMMAND_ID_HANDLER(ID_OPTIONS_AUTOMATICPREFS, OnOptionsAuto)
 		COMMAND_ID_HANDLER(ID_OPTIONS_MANUALPREFS, OnOptionsManual)
@@ -75,7 +73,7 @@ public:
 		COMMAND_ID_HANDLER(ID_INV_SELLER_STATS, OnSellerStats) // Ar1z
 
 //        COMMAND_ID_HANDLER(ID_INV_FIND_TOGGLE, OnFindToggle)
-//        COMMAND_ID_HANDLER(ID_INFO, OnShowInfo)
+//		COMMAND_ID_HANDLER(ID_INFO, OnShowInfo)
 //        COMMAND_ID_HANDLER(ID_RECORD_STATS_TOGGLE, OnRecordStats)
 //		COMMAND_ID_HANDLER(ID_OPTIONS_SELLER_STATS, OnOptionsSellerStats)
         MSG_WM_COPYDATA(OnAOMessage)
@@ -95,7 +93,6 @@ public:
 	LRESULT OnSellerStats(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
     LRESULT OnFileExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-    LRESULT OnViewToolBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnViewStatusBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnOptionsManual(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnOptionsAuto(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -111,8 +108,8 @@ public:
     LRESULT OnEraseBkgnd(HDC dc) { return 1; }
     LRESULT OnTrayIcon(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/);
     void OnSysCommand(UINT wParam, CPoint mousePos);
-	LRESULT OnShowInfo(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-
+	//LRESULT OnShowInfo(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled);
+	LRESULT OnForwardTest(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     //std::shared_ptr<CTrayNotifyIcon> GetTrayIcon() const { return m_trayIcon; }
 
 private:
@@ -122,7 +119,7 @@ private:
 
     bool Inject();
 	LRESULT OnUpdateMenuCheck(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    CCommandBarCtrl m_CmdBar;
+//    CCommandBarCtrl m_CmdBar;
     bool m_minimized;
     CRect m_windowRect;
     std::shared_ptr<aoia::GuiServices> m_guiServices;

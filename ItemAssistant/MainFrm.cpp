@@ -59,26 +59,32 @@ CMainFrame::CMainFrame(aoia::ISettingsPtr settings)
     }
 }
 
+// Inside CMainFrame::OnCreate (or similar)
+LRESULT CMainFrame::OnForwardTest(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& bHandled)
+{
+	if (wID == ID_INFO) {
+		::MessageBox(NULL, L"MainFrame caught ID_INFO", L"Debug", MB_OK);
+	}
+	bHandled = FALSE; // CRITICAL: Let it keep going to the tabs!
+	return 0;
+}
 
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
 {
-    IPluginView *plugin = m_tabbedChildWindow->GetActivePluginView();
-    if (plugin != NULL)
-    {
-        if (plugin->PreTranslateMsg(pMsg))
-        {
-            return TRUE;
-        }
-    }
+	// 1. Pass to the TabFrame (Ctrl+F logic)
+	if (m_tabbedChildWindow && m_tabbedChildWindow->PreTranslateMsg(pMsg))
+	{
+		return TRUE;
+	}
 
-    if(CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg))
-    {
-        return TRUE;
-    }
-
-    return FALSE;
+	// 2. WTL Frame standard translation
+	// Note: Do NOT call CFrameWindowImpl<CMainFrame>::PreTranslateMessage
+	// Standard WTL frames use this helper:
+	return CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg);
+	// If the line above still errors, change it to: return FALSE;
 }
+
 
 
 /* BOOL CMainFrame::OnIdle()
@@ -101,17 +107,17 @@ BOOL CMainFrame::OnIdle()
 	UIEnable(ID_RECORD_STATS_TOGGLE, isInventoryActive);
 	UIEnable(ID_INFO, isInventoryActive);
 	// REFRESH CHECKMARKS 
-	if (isInventoryActive) {
-		// Read the setting (ensure m_settings is available in CMainFrame)
-		int currentMs = _ttoi(m_settings->getValue(_T("Inventory.RefreshTime")).c_str());
-		int currentS = currentMs / 1000;
+	//if (isInventoryActive) {
+	//	// Read the setting (ensure m_settings is available in CMainFrame)
+	//	int currentMs = _ttoi(m_settings->getValue(_T("Inventory.RefreshTime")).c_str());
+	//	int currentS = currentMs / 1000;
 
-		for (int i = 1; i <= 10; ++i) {
-			UISetCheck(ID_REFRESH_1S + i - 1, (i == currentS));
-		}
-	}
+	//	for (int i = 1; i <= 10; ++i) {
+	//		UISetCheck(ID_REFRESH_1S + i - 1, (i == currentS));
+	//	}
+	//}
 	// 4. Standard WTL update processing
-	UIUpdateToolBar();
+	//UIUpdateToolBar();
 	UIUpdateMenuBar();
 	return FALSE;
 }
@@ -159,6 +165,8 @@ LRESULT CMainFrame::OnSellerStats(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 
 LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
+
+	//OnForwardTest();
     m_minimized = false;
 
     if (!m_windowRect.IsRectEmpty())
@@ -167,23 +175,23 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
     }
 
     // create command bar window
-    HWND hWndCmdBar = m_CmdBar.Create(m_hWnd, rcDefault, NULL, ATL_SIMPLE_CMDBAR_PANE_STYLE);
+   // HWND hWndCmdBar = m_CmdBar.Create(m_hWnd, rcDefault, NULL, ATL_SIMPLE_CMDBAR_PANE_STYLE);
     // attach menu
-    m_CmdBar.AttachMenu(GetMenu());
+   // m_CmdBar.AttachMenu(GetMenu());
     // load command bar images
-    m_CmdBar.LoadImages(IDR_MAINFRAME);
+    //m_CmdBar.LoadImages(IDR_MAINFRAME);
     // remove old menu
-    SetMenu(NULL);
-
+    //SetMenu(NULL);
+	SetMenu(::LoadMenu(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDR_MAINFRAME)));
     //HWND hWndToolBar = CreateSimpleToolBarCtrl(m_hWnd, IDR_MAINFRAME, FALSE, ATL_SIMPLE_TOOLBAR_PANE_STYLE);
 
-    CreateSimpleReBar(ATL_SIMPLE_REBAR_NOBORDER_STYLE);
-    AddSimpleReBarBand(hWndCmdBar);
+    //CreateSimpleReBar(ATL_SIMPLE_REBAR_NOBORDER_STYLE);
+    //AddSimpleReBarBand(hWndCmdBar);
     //AddSimpleReBarBand(hWndToolBar, NULL, TRUE);
-    {
-        CReBarCtrl rebar(m_hWndToolBar);
-        rebar.LockBands(true);
-    }
+    //{
+        //CReBarCtrl rebar(m_hWndToolBar);
+        //rebar.LockBands(true);
+   // }
 
     CreateSimpleStatusBar();
 
@@ -200,14 +208,14 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
     DWORD style = WS_CHILD | /*WS_VISIBLE |*/ WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 
     m_tabbedChildWindow.reset(new TabFrame(g_DBManager.GetDatabase(), m_containerManager, m_guiServices, m_settings));
-    m_tabbedChildWindow->SetToolBarPanel(m_hWndToolBar);
+//    m_tabbedChildWindow->SetToolBarPanel(m_hWndToolBar);
     m_tabbedChildWindow->SetStatusBar(m_hWndStatusBar);
-    m_tabbedChildWindow->SetTabStyles(CTCS_TOOLTIPS | CTCS_DRAGREARRANGE);
+//    m_tabbedChildWindow->SetTabStyles(CTCS_TOOLTIPS | CTCS_DRAGREARRANGE);
     m_hWndClient = m_tabbedChildWindow->Create(m_hWnd, rcDefault, 0, style | WS_VISIBLE);
-    m_tabbedChildWindow->SetToolbarVisibility(true);
+//    m_tabbedChildWindow->SetToolbarVisibility(true);
     
     UISetCheck(ID_VIEW_STATUS_BAR, true);
-    UISetCheck(ID_VIEW_TOOLBAR, true);
+    //UISetCheck(ID_VIEW_TOOLBAR, true);
 
 	bool bAutoPrefs = AOManager::instance().getAutoPrefs();
 	UISetCheck(ID_OPTIONS_AUTOMATICPREFS, bAutoPrefs);
@@ -285,16 +293,6 @@ LRESULT CMainFrame::OnFileExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCt
 }
 
 
-LRESULT CMainFrame::OnViewToolBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-    static bool bVisible = true;	// initially state
-    bVisible = !bVisible;
-    m_tabbedChildWindow->SetToolbarVisibility(bVisible);
-    UISetCheck(ID_VIEW_TOOLBAR, bVisible);
-    UpdateLayout();
-    return 0;
-}
-
 
 LRESULT CMainFrame::OnViewStatusBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
@@ -340,22 +338,22 @@ LRESULT CMainFrame::OnOptionsShowCreds(WORD /*wNotifyCode*/, WORD /*wID*/, HWND 
     return 0;
 }
 
-LRESULT CMainFrame::OnShowInfo(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-    // 1. Get current state from manager
-    bool bShowInfo = AOManager::instance().getShowInfo();
-    
-    // 2. Toggle the boolean
-    bShowInfo = !bShowInfo;
-    
-    // 3. Save the new state back to the manager
-    AOManager::instance().setShowInfo(bShowInfo);
-    
-    // 4. Update the UI checkmark visually
-    UISetCheck(ID_INFO, bShowInfo);
-
-    return 0;
-}
+//LRESULT CMainFrame::OnShowInfo(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
+//{
+//    // 1. Get current state from manager
+//    bool bShowInfo = AOManager::instance().getShowInfo();
+//    
+//    // 2. Toggle the boolean
+//    bShowInfo = !bShowInfo;
+//    
+//    // 3. Save the new state back to the manager
+//    AOManager::instance().setShowInfo(bShowInfo);
+//    
+//    // 4. Update the UI checkmark visually
+//    UISetCheck(ID_INFO, bShowInfo);
+//	bHandled = FALSE;
+//    return 0;
+//}
 
 
 LRESULT CMainFrame::OnOptionsMinToTaskbar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
@@ -522,7 +520,7 @@ LRESULT CMainFrame::OnUpdateMenuCheck(UINT /*uMsg*/, WPARAM wParam, LPARAM lPara
     UISetCheck((int)wParam, lParam != 0);
 
     // Force both the toolbar and the menu to refresh their visuals
-    UIUpdateToolBar();
+    //UIUpdateToolBar();
     UIUpdateMenuBar(); 
     return 0;
 }
