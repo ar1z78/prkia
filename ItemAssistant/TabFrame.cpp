@@ -4,6 +4,10 @@
 using namespace aoia;
 using namespace Parsers;
 
+static BOOL CALLBACK SetChildFont(HWND hWnd, LPARAM lParam) {
+	::SendMessage(hWnd, WM_SETFONT, (WPARAM)lParam, TRUE);
+	return TRUE;
+}
 
 TabFrame::TabFrame(sqlite::IDBPtr db, aoia::IContainerManagerPtr containerManager, aoia::IGuiServicesPtr gui, aoia::ISettingsPtr settings)
   : m_toobarVisibility(true)
@@ -28,7 +32,9 @@ LRESULT TabFrame::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandl
     RECT defRect = { 0, 0, 640, 480 };
 
     // Create the tab control
-    m_tabCtrl.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TCS_TABS | TCS_MULTILINE);
+	// Remove WS_CLIPCHILDREN from the tab control creation
+	m_tabCtrl.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TCS_TABS | TCS_MULTILINE);
+	ModifyStyle(0, WS_CLIPCHILDREN);
 
     // Create each tab view
     m_summaryView.Create(*this, defRect, 0, WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
@@ -66,6 +72,12 @@ LRESULT TabFrame::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandl
     // Display first tab
     DisplayTab(m_summaryView.m_hWnd);
 
+	// Get the standard Windows UI font handle
+	HFONT hGuiFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+	// Apply it to the TabFrame and all its children (tabs, buttons, etc.)
+	::SendMessage(m_hWnd, WM_SETFONT, (WPARAM)hGuiFont, TRUE);
+	EnumChildWindows(m_hWnd, SetChildFont, (LPARAM)hGuiFont);
     bHandled = TRUE;
     return 0;
 }
@@ -90,38 +102,47 @@ LRESULT TabFrame::OnSize(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled
 
 void TabFrame::ResizeTabContent()
 {
-    if (m_tabCtrl.IsWindow() && m_activeTabIndex >= 0)
-    {
-        RECT rcTab;
-        m_tabCtrl.GetClientRect(&rcTab);
-        
-        // Adjust for tab item area
-        m_tabCtrl.AdjustRect(FALSE, &rcTab);
+	if (!m_tabCtrl.IsWindow()) return;
 
-        // Resize active tab window
-        if (m_activeTabIndex < (int)m_tabs.size())
-        {
-            ::SetWindowPos(m_tabs[m_activeTabIndex].hWnd, NULL, 
-                rcTab.left, rcTab.top, 
-                rcTab.right - rcTab.left, 
-                rcTab.bottom - rcTab.top, 
-                SWP_NOZORDER | SWP_NOACTIVATE);
-        }
-    }
+	RECT rect;
+	m_tabCtrl.GetWindowRect(&rect); // Get screen coordinates
+	ScreenToClient(&rect);         // Convert to TabFrame (parent) coordinates
+
+	// AdjustRect shrinks the rect to the area below the tab buttons
+	m_tabCtrl.AdjustRect(FALSE, &rect);
+
+	int nSel = m_tabCtrl.GetCurSel();
+	if (nSel != -1 && nSel < (int)m_tabs.size()) {
+		// Move the child view to the adjusted position
+		::MoveWindow(m_tabs[nSel].hWnd, rect.left, rect.top,
+			rect.right - rect.left, rect.bottom - rect.top, TRUE);
+
+		// Ensure the active window is at the top of the Z-order
+		::SetWindowPos(m_tabs[nSel].hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
 }
 
 
-LRESULT TabFrame::OnSelChange(int /*idCtrl*/, LPNMHDR pnmh, BOOL& bHandled)
+
+
+LRESULT TabFrame::OnSelChange(int idCtrl, LPNMHDR pnmh, BOOL& bHandled)
 {
-    int nTab = m_tabCtrl.GetCurSel();
-    if (nTab >= 0 && nTab < (int)m_tabs.size())
-    {
-        DisplayTab(m_tabs[nTab].hWnd);
-    }
+	int nSel = m_tabCtrl.GetCurSel();
 
-    bHandled = TRUE;
-    return 0;
+	// 1. Hide all tab windows first
+	for (auto& tab : m_tabs) {
+		::ShowWindow(tab.hWnd, SW_HIDE);
+	}
+
+	// 2. Show only the active one and resize it to fit
+	if (nSel != -1) {
+		::ShowWindow(m_tabs[nSel].hWnd, SW_SHOW);
+		ResizeTabContent(); // Ensure it fills the tab area
+	}
+
+	return 0;
 }
+
 
 
 void TabFrame::AddTab(HWND hWnd, const std::tstring& title, aoia::IPluginView* pView)
@@ -176,30 +197,6 @@ void TabFrame::DisplayTab(HWND hWnd)
     {
         newplugin->OnActive(true);
         ::ShowWindow(newplugin->GetWindow(), SW_SHOW);
-
-        // Assign new toolbar
-        m_activeViewToolbar.Detach();
-        m_activeViewToolbar.Attach(newplugin->GetToolbar());
-
-        int nBandIndex = m_rebarControl.IdToIndex(ATL_IDW_BAND_FIRST + 1);  // toolbar is 2nd added band
-        if (nBandIndex < 0)
-        {
-            // Insert new band
-            WTL::CFrameWindowImplBase<>::AddSimpleReBarBandCtrl(m_rebarControl, m_activeViewToolbar, ATL_IDW_BAND_FIRST + 1, NULL, TRUE);
-            m_rebarControl.ShowBand(m_rebarControl.IdToIndex(ATL_IDW_BAND_FIRST + 1), m_toobarVisibility);
-            m_rebarControl.LockBands(true);
-        }
-        else
-        {
-            // Replace band
-            REBARBANDINFO rbbi;
-            ZeroMemory(&rbbi, sizeof(REBARBANDINFO));
-            rbbi.cbSize = sizeof(REBARBANDINFO);
-            rbbi.fMask = RBBIM_CHILD;
-            rbbi.hwndChild = m_activeViewToolbar.m_hWnd;
-
-            m_rebarControl.SetBandInfo(nBandIndex, &rbbi);
-        }
 
         // Update statusbar
         m_statusBar.SetText(0, newplugin->GetStatusText().c_str());
@@ -269,8 +266,17 @@ void TabFrame::OnAOClientMessage(AOClientMessageBase &msg)
 }
 
 
-void TabFrame::SetToolbarVisibility(bool visible)
+BOOL TabFrame::PreTranslateMsg(MSG* pMsg)
 {
-    m_toobarVisibility = visible;
-    m_rebarControl.ShowBand(m_rebarControl.IdToIndex(ATL_IDW_BAND_FIRST + 1), m_toobarVisibility);
+	int nSel = m_tabCtrl.GetCurSel();
+	if (nSel != -1 && nSel < (int)m_tabs.size())
+	{
+		// This is the CRITICAL hand-off for keyboard shortcuts
+		if (m_tabs[nSel].pView && m_tabs[nSel].pView->PreTranslateMsg(pMsg))
+			return TRUE;
+	}
+	return FALSE;
 }
+
+
+

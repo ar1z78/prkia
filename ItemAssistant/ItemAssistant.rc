@@ -131,27 +131,30 @@ IDR_MAINFRAME           BITMAP                  "res\\mainfram.bmp"
 
 IDR_MAINFRAME MENU
 BEGIN
-    POPUP "&File"
+    POPUP "&Program"
     BEGIN
+	    MENUITEM "&Refresh Tab",    ID_REFRESH
+        MENUITEM SEPARATOR
+        //MENUITEM "&Help",       ID_HELP
         MENUITEM "E&xit",                       ID_APP_EXIT
     END
     POPUP "&Edit"
     BEGIN
-        MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
-        MENUITEM SEPARATOR
+        //MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
+        //MENUITEM SEPARATOR
         MENUITEM "&Find\tCtrl+F",               ID_INV_FIND
     END
-    POPUP "&View"
-    BEGIN
-        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
-        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
-    END
+    //POPUP "&View"
+    //BEGIN
+        //MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
+        //MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
+    //END
 	POPUP "&Inventory"
 	BEGIN
 		MENUITEM "&Seller stats"				ID_INV_SELLER_STATS
 		MENUITEM SEPARATOR
 		MENUITEM "&Find Item"					ID_INV_FIND_TOGGLE
-		MENUITEM "Item &Info"					ID_INFO
+		MENUITEM "Item &Info\tCtrl+I"			ID_INFO
 		MENUITEM "&Record Stats"				ID_RECORD_STATS_TOGGLE
 	END
     POPUP "&Options"
@@ -160,7 +163,8 @@ BEGIN
         MENUITEM "&Manually Locate PRK Prefs",   ID_OPTIONS_MANUALPREFS
         MENUITEM "&Show Creds in Inventory",    ID_OPTIONS_SHOWCREDS
         MENUITEM "Minimise to &Taskbar",        ID_OPTIONS_MINIMISETOTASKBAR
-    END
+		MENUITEM "&Status Bar", ID_VIEW_STATUS_BAR
+		END
     POPUP "&Help"
     BEGIN
        // MENUITEM "&Support Forums...",          ID_HELP_SUPPORTFORUM
@@ -229,27 +233,6 @@ END
 IDR_HTML1               HTML                    "res\\html1.htm"
 IDR_HTML2               HTML                    "res\\html2.htm"
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Toolbar
-//
-
-IDR_MAINFRAME TOOLBAR 16, 16
-BEGIN
-    BUTTON      ID_FILE_NEW
-    BUTTON      ID_FILE_OPEN
-    BUTTON      ID_FILE_SAVE
-    SEPARATOR
-    BUTTON      ID_EDIT_CUT
-    BUTTON      ID_EDIT_COPY
-    BUTTON      ID_EDIT_PASTE
-    SEPARATOR
-    BUTTON      ID_FILE_PRINT
-    BUTTON      ID_APP_ABOUT
-    SEPARATOR
-    BUTTON      ID_EDIT_CLEAR
-END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -271,7 +254,7 @@ IDR_INV_ACCEL ACCELERATORS
 BEGIN
     "I",            ID_INFO,                VIRTKEY, CONTROL, NOINVERT
     "F",            ID_INV_FIND,            VIRTKEY, CONTROL, NOINVERT
-    VK_ESCAPE,      ID_INV_FIND_HIDE,       VIRTKEY, NOINVERT
+//    VK_ESCAPE,      ID_INV_FIND_HIDE,       VIRTKEY, NOINVERT
 END
 
 IDR_PB_ACCEL ACCELERATORS
@@ -593,7 +576,7 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
+    //ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
     ID_VIEW_STATUS_BAR      "Show or hide the status bar\nToggle StatusBar"
 END
 

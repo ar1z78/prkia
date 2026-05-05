@@ -24,22 +24,9 @@
 
 class InventoryView
     : public ItemAssistView<InventoryView>
-	, public WTL::CUpdateUI<InventoryView>
 {
     typedef ItemAssistView<InventoryView> inherited;
 public:
-	BEGIN_UPDATE_UI_MAP(InventoryView)
-		UPDATE_ELEMENT(ID_REFRESH_1S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_2S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_3S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_4S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_5S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_6S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_7S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_8S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_9S, UPDUI_MENUPOPUP)
-		UPDATE_ELEMENT(ID_REFRESH_10S, UPDUI_MENUPOPUP)
-	END_UPDATE_UI_MAP()
 
     DECLARE_WND_CLASS(NULL)
 
@@ -67,7 +54,7 @@ public:
         MSG_WM_SIZE(OnSize)
         //MSG_WM_NOTIFY(OnNotify)
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
-		COMMAND_RANGE_HANDLER(ID_REFRESH_1S, ID_REFRESH_10S, OnSetRefreshTime)
+//		COMMAND_RANGE_HANDLER(ID_REFRESH_1S, ID_REFRESH_10S, OnSetRefreshTime)
         MESSAGE_HANDLER(WM_POSTCREATE, OnPostCreate)
         COMMAND_ID_HANDLER(ID_INV_FIND_TOGGLE, OnFindToggle)
         COMMAND_ID_HANDLER(ID_INV_FIND, OnFind)
@@ -95,7 +82,7 @@ public:
         //NOTIFY_CODE_HANDLER_EX(LVN_ITEMACTIVATE, OnItemActivate)
         NOTIFY_CODE_HANDLER_EX(LVN_ITEMCHANGED, OnItemChanged)
         NOTIFY_HANDLER_EX(IDW_LISTVIEW, NM_RCLICK, OnItemContextMenu)
-		CHAIN_MSG_MAP(WTL::CUpdateUI<InventoryView>)
+		//CHAIN_MSG_MAP(WTL::CUpdateUI<InventoryView>)
 		CHAIN_MSG_MAP(inherited)
         REFLECT_NOTIFICATIONS()
         DEFAULT_REFLECTION_HANDLER()
@@ -130,6 +117,7 @@ public:
     void UpdateListView(std::tstring const& where);
     void exportToCSV(std::tstring const& where);
     void OnSelectionChanged();
+	void InventoryView::OnActive(bool doActivation);
 
     enum ItemServer {
         SERVER_AUNO = 1,
@@ -166,7 +154,6 @@ protected:
     bool SetClipboardText(std::tstring const& text);
     void GetSelectedItemIds( std::set<unsigned int> &ids );
 	LRESULT OnTimer(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
-	LRESULT OnSetRefreshTime(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
 
 private:
 	std::tstring m_lastPredicate;
