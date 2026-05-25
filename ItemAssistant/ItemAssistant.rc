@@ -134,6 +134,7 @@ BEGIN
     POPUP "&Program"
     BEGIN
 	    MENUITEM "&Refresh Tab",    ID_REFRESH
+		MENUITEM "Re&Calculate Patterns", ID_RECALCULATE
         MENUITEM SEPARATOR
         //MENUITEM "&Help",       ID_HELP
         MENUITEM "E&xit",                       ID_APP_EXIT
